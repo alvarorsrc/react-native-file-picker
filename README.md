@@ -2,17 +2,15 @@
 
 A React Native module that allows you to use native UI to select a file from the device library.
 
-> This is a fork of `Lichwa/react-native-file-picker` that adds support for latest React Native, implements promises and more.
+>This is a fork of `callstack/react-native-file-picker`
 
 ## Install package
 
-You can install package with `react-native install` which will automatically link all the native files for you.
+To install from the current repository:
 
 ```bash
-$ react-native install react-native-file-picker --save
+$ yarn add https://github.com/alvarorsrc/react-native-file-picker
 ```
-
-**Note**: If you are installing this package with `yarn add` or `npm install`, run the following after:
 
 ```bash
 $ react-native link react-native-file-picker
@@ -35,8 +33,6 @@ In order to allow your users select files from within your application, you will
 
 ## Usage
 
-For detailed usage, please check `examples` folder.
-
 ### Picking a file
 
 In order to pick any file using native UI, you'll have to import FilePicker module and call `pickFile` method on it.
@@ -44,10 +40,11 @@ In order to pick any file using native UI, you'll have to import FilePicker modu
 ```js
 import FilePicker from 'react-native-file-picker';
 
-FilePicker.pickFile({ title: 'Pick something', type: '*/*' })
+//Put ['*/*'] as a first parameter if you want to be able to pick all files types
+FilePicker.pickFile(['application/xml','application/pdf'])
    .then(res => {
      if (!res.cancelled) {
-       console.log('We have a file');
+       console.log(res.files);
      } 
    })
    .catch(err => {});
