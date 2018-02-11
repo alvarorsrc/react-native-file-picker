@@ -6,7 +6,7 @@ A React Native module that allows you to use native UI to select a file from the
 
 ## Install package
 
-To install from the current repository:
+In order to install from the current repository:
 
 ```bash
 $ yarn add https://github.com/alvarorsrc/react-native-file-picker
@@ -40,7 +40,7 @@ In order to pick any file using native UI, you'll have to import FilePicker modu
 ```js
 import FilePicker from 'react-native-file-picker';
 
-//Put ['*/*'] as a first parameter if you want to be able to pick all files types
+//Put ['*/*'] as parameter if you want to be able to pick all file types.
 FilePicker.pickFile(['application/xml','application/pdf'])
    .then(res => {
      if (!res.cancelled) {
