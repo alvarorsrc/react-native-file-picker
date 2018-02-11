@@ -16,7 +16,6 @@ public class FilePickerPackage implements ReactPackage {
     return Arrays.<NativeModule>asList(new FilePickerModule(reactContext));
   }
 
-  @Override
   public List<Class<? extends JavaScriptModule>> createJSModules() {
     return Collections.emptyList();
   }
