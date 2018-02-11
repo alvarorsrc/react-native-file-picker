@@ -3,9 +3,11 @@ package com.filepicker;
 import android.annotation.TargetApi;
 import android.app.Activity;
 import android.content.ActivityNotFoundException;
+import android.content.ClipData;
 import android.content.ContentUris;
 import android.content.Context;
 import android.content.Intent;
+import android.content.ClipDescription;
 import android.database.Cursor;
 import android.net.Uri;
 import android.os.Build;
@@ -19,8 +21,9 @@ import com.facebook.react.bridge.Promise;
 import com.facebook.react.bridge.ReactApplicationContext;
 import com.facebook.react.bridge.ReactContextBaseJavaModule;
 import com.facebook.react.bridge.ReactMethod;
-import com.facebook.react.bridge.ReadableMap;
+import com.facebook.react.bridge.ReadableArray;
 import com.facebook.react.bridge.WritableMap;
+import com.facebook.react.bridge.WritableArray;
 
 public class FilePickerModule extends ReactContextBaseJavaModule implements ActivityEventListener {
 
@@ -44,7 +47,7 @@ public class FilePickerModule extends ReactContextBaseJavaModule implements Acti
     }
 
     @ReactMethod
-    public void pickFile(final ReadableMap options, final Promise promise) {
+    public void pickFile(final ReadableArray fileType, final Promise promise) {
         int requestCode;
         Intent libraryIntent;
 
@@ -55,22 +58,16 @@ public class FilePickerModule extends ReactContextBaseJavaModule implements Acti
             return;
         }
 
-        String fileType, dialogTitle;
+        String[] mimeTypes = new String[fileType.size()];
 
-        if (options.hasKey("type")) {
-            fileType = options.getString("type");
-        } else {
-            fileType = "*/*";
-        }
-
-        if (options.hasKey("title")) {
-            dialogTitle = options.getString("title");
-        } else {
-            dialogTitle = "Select a file";
+        for(int i=0; i<fileType.size(); i++){
+            mimeTypes[i] = fileType.getString(i);
         }
 
         libraryIntent = new Intent(Intent.ACTION_GET_CONTENT);
-        libraryIntent.setType(fileType);
+        libraryIntent.setType("*/*");
+        libraryIntent.putExtra(Intent.EXTRA_MIME_TYPES, mimeTypes);
+        libraryIntent.putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true);
         libraryIntent.addCategory(Intent.CATEGORY_OPENABLE);
 
         if (libraryIntent.resolveActivity(mReactContext.getPackageManager()) == null) {
@@ -81,7 +78,7 @@ public class FilePickerModule extends ReactContextBaseJavaModule implements Acti
         mPromise = promise;
 
         try {
-            currentActivity.startActivityForResult(Intent.createChooser(libraryIntent, dialogTitle), REQUEST_LAUNCH_FILE_CHOOSER);
+            currentActivity.startActivityForResult(Intent.createChooser(libraryIntent, ""), REQUEST_LAUNCH_FILE_CHOOSER);
         } catch (ActivityNotFoundException e) {
             mPromise.reject(e);
             mPromise = null;
@@ -91,6 +88,16 @@ public class FilePickerModule extends ReactContextBaseJavaModule implements Acti
     @Override
     public void onNewIntent(Intent intent) {
 
+    }
+
+    private String getFileNameFromUri(Activity activity, final Uri uri){
+        Cursor cursor = activity.getContentResolver().query(uri, null, null, null, null);
+        if (cursor != null && cursor.moveToFirst()) {
+            final int column_index = cursor.getColumnIndexOrThrow("_display_name");
+            return cursor.getString(column_index);
+        }else{
+            return "error";
+        }
     }
 
     @Override
@@ -110,12 +117,32 @@ public class FilePickerModule extends ReactContextBaseJavaModule implements Acti
         }
 
         if (resultCode == Activity.RESULT_OK) {
-            Uri uri = data.getData();
-            String path = getPath(activity, uri);
-            response.putString("uri", uri.toString());
-            if (path != null) {
-                response.putString("path", path);
+            ClipData files;
+            if(data.getClipData() == null && data.getData() != null){
+                files = new ClipData(new ClipDescription("", new String[]{"*/*"}), new ClipData.Item(data.getData()));
+            }else {
+                files = data.getClipData();
             }
+
+            WritableArray fileArray = Arguments.createArray();
+
+            for(int i=0; i<files.getItemCount(); i++){
+                Uri uri = files.getItemAt(i).getUri();
+                String name = getFileNameFromUri(activity, uri);
+                String type = activity.getContentResolver().getType(uri);
+                String path = getPath(activity, uri);
+                
+                WritableMap item = Arguments.createMap();
+                item.putString("uri", uri.toString());
+                item.putString("name", name);
+                item.putString("type", type);
+                if (path != null) {
+                    item.putString("path", path);
+                }
+
+                fileArray.pushMap(item);
+            }
+            response.putArray("files", fileArray);
             mPromise.resolve(response);
             mPromise = null;
             return;
