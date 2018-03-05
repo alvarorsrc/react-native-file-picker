@@ -22,6 +22,7 @@ import com.facebook.react.bridge.ReactApplicationContext;
 import com.facebook.react.bridge.ReactContextBaseJavaModule;
 import com.facebook.react.bridge.ReactMethod;
 import com.facebook.react.bridge.ReadableArray;
+import com.facebook.react.bridge.ReadableMap;
 import com.facebook.react.bridge.WritableMap;
 import com.facebook.react.bridge.WritableArray;
 
@@ -47,7 +48,7 @@ public class FilePickerModule extends ReactContextBaseJavaModule implements Acti
     }
 
     @ReactMethod
-    public void pickFile(final ReadableArray fileType, final Promise promise) {
+    public void pickFile(final ReadableMap options, final Promise promise) {
         int requestCode;
         Intent libraryIntent;
 
@@ -58,16 +59,27 @@ public class FilePickerModule extends ReactContextBaseJavaModule implements Acti
             return;
         }
 
-        String[] mimeTypes = new String[fileType.size()];
+        String[] mimeTypes;
+        boolean multiSelect = false;
 
-        for(int i=0; i<fileType.size(); i++){
-            mimeTypes[i] = fileType.getString(i);
+        if(options.hasKey("fileType") && !options.isNull("fileType")){
+            ReadableArray fileType = options.getArray("fileType");
+            mimeTypes = new String[fileType.size()];
+            for(int i=0; i<fileType.size(); i++){
+                mimeTypes[i] = fileType.getString(i);
+            }
+        }else{
+            mimeTypes = new String[]{"*/*"};
         }
+
+        if(options.hasKey("multiSelect") && !options.isNull("multiSelect")){
+            multiSelect = options.getBoolean("multiSelect");
+        }       
 
         libraryIntent = new Intent(Intent.ACTION_GET_CONTENT);
         libraryIntent.setType("*/*");
         libraryIntent.putExtra(Intent.EXTRA_MIME_TYPES, mimeTypes);
-        libraryIntent.putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true);
+        if(multiSelect)libraryIntent.putExtra(Intent.EXTRA_ALLOW_MULTIPLE, true);
         libraryIntent.addCategory(Intent.CATEGORY_OPENABLE);
 
         if (libraryIntent.resolveActivity(mReactContext.getPackageManager()) == null) {

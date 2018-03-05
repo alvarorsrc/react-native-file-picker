@@ -40,8 +40,8 @@ In order to pick any file using native UI, you'll have to import FilePicker modu
 ```js
 import FilePicker from 'react-native-file-picker';
 
-//Put ['*/*'] as parameter if you want to be able to pick all file types.
-FilePicker.pickFile(['application/xml','application/pdf'])
+//Default values for 'fileType' and 'multiSelect' are ['*/*'] and false respectively.
+FilePicker.pickFile({fileType : ['application/xml','application/pdf'], multiSelect: true})
    .then(res => {
      if (!res.cancelled) {
        console.log(res.files);
