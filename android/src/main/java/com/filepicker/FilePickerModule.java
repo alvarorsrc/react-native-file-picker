@@ -1,5 +1,7 @@
 package com.filepicker;
 
+import android.text.format.Formatter;
+import android.provider.OpenableColumns;
 import android.annotation.TargetApi;
 import android.app.Activity;
 import android.content.ActivityNotFoundException;
@@ -97,6 +99,17 @@ public class FilePickerModule extends ReactContextBaseJavaModule implements Acti
         }
     }
 
+    public static void closeQuietly(AutoCloseable closeable) {
+        if (closeable != null) {
+            try {
+                closeable.close();
+            } catch (RuntimeException rethrown) {
+                throw rethrown;
+            } catch (Exception ignored) {
+            }
+        }
+    }
+
     @Override
     public void onNewIntent(Intent intent) {
 
@@ -148,6 +161,7 @@ public class FilePickerModule extends ReactContextBaseJavaModule implements Acti
                 item.putString("uri", uri.toString());
                 item.putString("name", name);
                 item.putString("type", type);
+                item.putString("size", getFileSizeFromUri(uri,activity));
                 if (path != null) {
                     item.putString("path", path);
                 }
@@ -158,6 +172,27 @@ public class FilePickerModule extends ReactContextBaseJavaModule implements Acti
             mPromise.resolve(response);
             mPromise = null;
             return;
+        }
+    }
+
+    public static String getFileSizeFromUri(Uri uri, Activity a) {
+        Long fileSize = null;
+        Cursor cursor = a.getContentResolver().query(uri, null, null, null,
+                null, null);
+        try {
+            if (cursor != null && cursor.moveToFirst()) {
+                fileSize = cursor.getLong(cursor
+                        .getColumnIndex(OpenableColumns.SIZE));
+            }
+        } finally {
+            if (cursor != null) {
+                closeQuietly(cursor);
+            }
+        }
+        if (fileSize != null) {
+            return Formatter.formatFileSize(a, fileSize);
+        } else {
+            return null;
         }
     }
 
